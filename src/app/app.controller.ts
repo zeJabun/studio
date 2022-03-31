@@ -1,4 +1,4 @@
-import { Controller, Get, Inject, NotFoundException, Param, Query } from '@nestjs/common';
+import { Controller, Get, Inject, NotFoundException, Param, Query, Render } from '@nestjs/common';
 
 import { AppService } from './app.service';
 import { GetAppBalancesQuery } from './dto/get-app-balances-query.dto';
@@ -24,5 +24,21 @@ export class AppController {
   @Get(`/:appId/balances`)
   getAppBalances(@Param('appId') appId: string, @Query() query: GetAppBalancesQuery) {
     return this.appService.getAppBalances({ ...query, appId });
+  }
+
+  @Get(`/:appId/balances.html`)
+  @Render('balance')
+  async renderAppBalances(@Param('appId') appId: string, @Query() query: GetAppBalancesQuery) {
+    const data = await this.appService.getAppBalances({ ...query, appId });
+
+    const resp = Object.entries(data).map(([address, balance]) => {
+      return {
+        address,
+        products: balance.products,
+        meta: balance.meta,
+      };
+    });
+
+    return { data: resp };
   }
 }

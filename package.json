@@ -28,6 +28,7 @@
     "cache-manager": "^3.6.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
+    "ejs": "^3.1.6",
     "esbuild": "^0.14.27",
     "esbuild-runner": "^2.2.1",
     "ethers": "^5.6.1",

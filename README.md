@@ -1,4 +1,4 @@
-# Agora
+# Zapper Studio
 
 ## Installation
 
@@ -10,26 +10,10 @@ $ pnpm install
 
 ```bash
 # development
-$ pnpm run start
+$ pnpm start
 
 # watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
-```
-
-## Test
-
-```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+$ pnpm dev
 ```
 
 ## Generating a typescript contract from an ABI
@@ -40,7 +24,7 @@ to quickly spin up a typescript library for interacting with a given smart contr
 You can quickly spin up a typescript library for using an ABI by running the following command:
 
 ```bash
-./agora generate:contract-factory [app-id]
+pnpm agora generate:contract-factory [app-id]
 ```
 
 ## Contributing new commands
@@ -48,6 +32,5 @@ You can quickly spin up a typescript library for using an ABI by running the fol
 You can generate a new cli command by running the hidden command:
 
 ```
-./agora new:command [my-command-name]
+pnpm agora new:command [my-command-name]
 ```
-

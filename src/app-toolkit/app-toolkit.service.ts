@@ -1,4 +1,7 @@
-import { forwardRef, Inject, Injectable } from '@nestjs/common';
+import { CACHE_MANAGER, forwardRef, Inject, Injectable } from '@nestjs/common';
+import { BigNumber as BigNumberJS } from 'bignumber.js';
+import { Cache } from 'cache-manager';
+import { ethers } from 'ethers';
 
 import { ContractFactory } from '~contract';
 import { EthersMulticall, MULTICALL_ADDRESSES } from '~multicall';
@@ -20,16 +23,15 @@ export class AppToolkit implements IAppToolkit {
     @Inject(NetworkProviderService) private readonly networkProviderService: NetworkProviderService,
     @Inject(PositionService) private readonly positionService: PositionService,
     @Inject(TokenService) private readonly tokenService: TokenService,
+    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {
     this.contractFactory = new ContractFactory((network: Network) => this.networkProviderService.getProvider(network));
   }
 
+  // Network Related
+
   get globalContracts() {
     return this.contractFactory;
-  }
-
-  get helpers() {
-    return this.helperRegistry;
   }
 
   getNetworkProvider(network: Network) {
@@ -59,11 +61,29 @@ export class AppToolkit implements IAppToolkit {
   }
 
   // Positions
-  getAppTokenPositions<T = DefaultDataProps>(...appTokenDefinition: AppGroupsDefinition[]) {
-    return this.positionService.getAppTokenPositions<T>(...appTokenDefinition);
+
+  getAppTokenPositions<T = DefaultDataProps>(...appTokenDefinitions: AppGroupsDefinition[]) {
+    return this.positionService.getAppTokenPositions<T>(...appTokenDefinitions);
   }
 
-  getAppContractPositions<T = DefaultDataProps>(...appTokenDefinition: AppGroupsDefinition[]) {
-    return this.positionService.getAppContractPositions<T>(...appTokenDefinition);
+  getAppContractPositions<T = DefaultDataProps>(...appTokenDefinitions: AppGroupsDefinition[]) {
+    return this.positionService.getAppContractPositions<T>(...appTokenDefinitions);
+  }
+
+  // Cache
+
+  getFromCache<T = any>(key: string) {
+    return this.cacheManager.get<T>(key);
+  }
+
+  // Global Helpers
+
+  get helpers() {
+    return this.helperRegistry;
+  }
+
+  getBigNumber(source: BigNumberJS.Value | ethers.BigNumber): BigNumberJS {
+    if (source instanceof ethers.BigNumber) return new BigNumberJS(source.toString());
+    return new BigNumberJS(source);
   }
 }

@@ -1,8 +1,7 @@
 import { Command } from '@oclif/core';
 
-import HelloCommand from './hello';
-import PotatoCommand from './potato';
-import NewCommand from './new-command';
+import CodegenApp from './codegen-app';
+import CreateAppCommand from './create-app';
 import GenerateContractFactory from './generate-contract-factory';
 
 /**
@@ -11,8 +10,7 @@ import GenerateContractFactory from './generate-contract-factory';
  * be automatically added to the root CLI
  */
 export const commands: Record<string, typeof Command> = {
-  hello: HelloCommand,
-  potato: PotatoCommand,
-  'create:command': NewCommand,
   'generate:contract-factory': GenerateContractFactory,
+  'create-app': CreateAppCommand,
+  'codegen-app': CodegenApp,
 };

@@ -36,9 +36,14 @@ export enum ProtocolTag {
   YIELD_AGGREGATOR = 'yield-aggregator',
 }
 
+export enum GroupType {
+  TOKEN = 'token',
+  POSITION = 'contract-position',
+}
+
 export type AppGroup = {
   id: string;
-  network: Network;
+  type: GroupType;
 };
 
 export type AppDefinitionObject = {
@@ -48,11 +53,11 @@ export type AppDefinitionObject = {
   description: string;
   groups: Record<string, AppGroup>;
   supportedNetworks: { [N in Network]?: ProtocolAction[] };
-  primaryColor: string;
+  primaryColor?: string;
   url: string;
   compatibleAddressFormat?: { [N in Network]?: AddressFormat };
-  token: {
+  token?: {
     address: string;
     network: Network;
-  } | null;
+  };
 };

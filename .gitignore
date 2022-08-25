@@ -3,11 +3,18 @@ dist
 tmp
 /out-tsc
 
+# for linking
+studio
+
+# cache
+.cache
+
 # dependencies
 node_modules
 /.pnp
 .pnp.js
 .pnpm-debug.log
+.pnpm-store
 
 # IDEs and editors
 *~undo-tree~

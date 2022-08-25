@@ -3,8 +3,8 @@ import { BigNumber } from 'ethers';
 import { compact, sumBy } from 'lodash';
 
 import { drillBalance } from '~app-toolkit';
-import { APP_TOOLKIT, IAppToolkit } from '~lib';
-import { EthersMulticall } from '~multicall';
+import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
+import { IMulticallWrapper } from '~multicall/multicall.interface';
 import { ContractPositionBalance } from '~position/position-balance.interface';
 import { isClaimable, isVesting } from '~position/position.utils';
 import { Network } from '~types/network.interface';
@@ -17,8 +17,8 @@ type CurveVestingEscrowContractPositionBalanceHelperParams<T> = {
   groupId: string;
   network: Network;
   resolveContract: (opts: { contractFactory: ContractFactory; address: string }) => T;
-  resolveUnlockedBalance: (opts: { contract: T; multicall: EthersMulticall; address: string }) => Promise<BigNumber>;
-  resolveLockedBalance: (opts: { contract: T; multicall: EthersMulticall; address: string }) => Promise<BigNumber>;
+  resolveUnlockedBalance: (opts: { contract: T; multicall: IMulticallWrapper; address: string }) => Promise<BigNumber>;
+  resolveLockedBalance: (opts: { contract: T; multicall: IMulticallWrapper; address: string }) => Promise<BigNumber>;
 };
 
 @Injectable()

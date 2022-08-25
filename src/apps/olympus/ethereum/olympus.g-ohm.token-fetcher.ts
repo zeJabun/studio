@@ -1,9 +1,9 @@
 import { Inject } from '@nestjs/common';
 import { BigNumber } from 'ethers';
 
+import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { Register } from '~app-toolkit/decorators';
 import { getAppImg } from '~app-toolkit/helpers/presentation/image.present';
-import { APP_TOOLKIT, IAppToolkit } from '~lib';
 import { PositionFetcher } from '~position/position-fetcher.interface';
 import { AppTokenPosition } from '~position/position.interface';
 import { Network } from '~types/network.interface';
@@ -15,7 +15,7 @@ const appId = OLYMPUS_DEFINITION.id;
 const network = Network.ETHEREUM_MAINNET;
 const groupId = OLYMPUS_DEFINITION.groups.gOhm.id;
 
-@Register.ContractPositionFetcher({
+@Register.TokenPositionFetcher({
   appId,
   groupId,
   network,
@@ -27,14 +27,15 @@ export class EthereumOlympusGOhmTokenFetcher implements PositionFetcher<AppToken
   ) {}
 
   async getPositions() {
-    return this.appToolkit.helpers.singleVaultTokenHelper.getTokens<OlympusGOhmToken>({
-      appId: OLYMPUS_DEFINITION.id,
-      groupId: OLYMPUS_DEFINITION.groups.gOhm.id,
-      network: Network.ETHEREUM_MAINNET,
+    return this.appToolkit.helpers.vaultTokenHelper.getTokens<OlympusGOhmToken>({
+      appId,
+      groupId,
+      network,
+      exchangeable: true,
       dependencies: [{ appId, groupIds: [OLYMPUS_DEFINITION.groups.sOhm.id], network }],
-      address: '0x0ab87046fbb341d058f17cbc4c1133f25a20a52f', // gOHM
+      resolveVaultAddresses: () => ['0x0ab87046fbb341d058f17cbc4c1133f25a20a52f'], // gOHM
       resolveContract: ({ address, network }) => this.contractFactory.olympusGOhmToken({ address, network }),
-      resolveUnderlyingTokenAddress: () => '0x04906695d6d12cf5459975d7c3c03356e4ccd460', // sOHM
+      resolveUnderlyingTokenAddress: ({ contract, multicall }) => multicall.wrap(contract).sOHM(),
       resolvePricePerShare: async ({ multicall, contract, underlyingToken }) => {
         const oneOhm = BigNumber.from(1).mul(10).pow(underlyingToken.decimals);
         const [gOhmDecimalsRaw, gOhmConvertedAmountRaw] = await Promise.all([

@@ -2,13 +2,13 @@ import { Inject } from '@nestjs/common';
 import Axios from 'axios';
 
 import { drillBalance } from '~app-toolkit';
+import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { Register } from '~app-toolkit/decorators';
 import { presentBalanceFetcherResponse } from '~app-toolkit/helpers/presentation/balance-fetcher-response.present';
 import { buildDollarDisplayItem } from '~app-toolkit/helpers/presentation/display-item.present';
 import { getTokenImg } from '~app-toolkit/helpers/presentation/image.present';
 import { BalanceFetcher } from '~balance/balance-fetcher.interface';
-import { Cache } from '~cache/cache.decorator';
-import { APP_TOOLKIT, IAppToolkit } from '~lib';
+import { CacheOnInterval } from '~cache/cache-on-interval.decorator';
 import { ContractType } from '~position/contract.interface';
 import { ContractPositionBalance } from '~position/position-balance.interface';
 import { claimable } from '~position/position.utils';
@@ -29,7 +29,7 @@ type ClaimableDataResponse = {
 
 const network = Network.ETHEREUM_MAINNET;
 const rewardContractAddress = '0x79dd22579112d8a5f7347c5ed7e609e60da713c5';
-const rewardsHashContractAddress = '0x5ec3EC6A8aC774c7d53665ebc5DDf89145d02fB6';
+const rewardsHashContractAddress = '0x5ec3ec6a8ac774c7d53665ebc5ddf89145d02fb6';
 
 @Register.BalanceFetcher(TOKEMAK_DEFINITION.id, Network.ETHEREUM_MAINNET)
 export class EthereumTokemakBalanceFetcher implements BalanceFetcher {
@@ -60,10 +60,9 @@ export class EthereumTokemakBalanceFetcher implements BalanceFetcher {
     });
   }
 
-  @Cache({
-    key: (address: string) =>
-      `studio:${TOKEMAK_DEFINITION.id}:${TOKEMAK_DEFINITION.groups.farm}:${network}:${address}:claimable`,
-    ttl: 15 * 60, // 15 min
+  @CacheOnInterval({
+    key: `studio:${TOKEMAK_DEFINITION.id}:${TOKEMAK_DEFINITION.groups.farm.id}:${network}:cycle-rewards-hash`,
+    timeout: 15 * 60 * 1000, // 15 min
   })
   async getCycleRewardsHash() {
     const multicall = this.appToolkit.getMulticall(network);

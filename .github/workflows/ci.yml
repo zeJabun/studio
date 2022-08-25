@@ -1,16 +1,12 @@
 name: Zapper Police 👮🏻‍♂️🚨
 
 on:
-  push:
-    paths:
-      - '!**.md'
-      - src/**
-      - package.json
-      - pnpm-lock.yaml
-      - .github/workflows/ci.yml
-    branches-ignore:
-      - main
-      - refs/tags/*
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
 
 jobs:
   build:
@@ -21,7 +17,7 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: 'lts/gallium'
 
       - name: Cache pnpm modules
         uses: actions/cache@v2
@@ -31,13 +27,39 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-
 
-      - uses: pnpm/action-setup@v2.0.1
+      - uses: pnpm/action-setup@v2.2.1
         with:
-          version: 6.23.2
+          version: 7.0.1
           run_install: true
 
       - name: Studio Background Check 🚓
         run: pnpm build
+
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 'lts/gallium'
+
+      - name: Cache pnpm modules
+        uses: actions/cache@v2
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-
+
+      - uses: pnpm/action-setup@v2.2.1
+        with:
+          version: 7.0.1
+          run_install: true
+
+      - name: Run Studio Unit Tests 🚓
+        run: pnpm test
 
   integration:
     name: Integration Tests
@@ -47,7 +69,7 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: 'lts/gallium'
 
       - name: Cache pnpm modules
         uses: actions/cache@v2
@@ -57,9 +79,9 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-
 
-      - uses: pnpm/action-setup@v2.0.1
+      - uses: pnpm/action-setup@v2.2.1
         with:
-          version: 6.23.2
+          version: 7.0.1
           run_install: true
 
       - name: Run Studio Integration Tests 🚓
@@ -73,7 +95,7 @@ jobs:
 
       - uses: actions/setup-node@v2
         with:
-          node-version: '14'
+          node-version: 'lts/gallium'
 
       - name: Cache pnpm modules
         uses: actions/cache@v2
@@ -83,10 +105,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-
 
-      - uses: pnpm/action-setup@v2.0.1
+      - uses: pnpm/action-setup@v2.2.1
         with:
-          version: 6.23.2
+          version: 7.0.1
           run_install: true
 
       - name: Studio linting tests
-        run: pnpm lint
+        run: pnpm lint:ci

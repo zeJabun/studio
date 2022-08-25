@@ -9,10 +9,10 @@ import { camelCase, kebabCase, sortBy, upperFirst } from 'lodash';
 import { glob, runTypeChain } from 'typechain';
 
 import { execCodeFormatting } from '../format/exec-code-formatting';
+import { formatAndWrite } from '../generators/utils';
 import { appPath } from '../paths/app-path';
 import { strings } from '../strings';
 
-const writeFile = util.promisify(fs.writeFile);
 const mkdir = util.promisify(fs.mkdir);
 const rmdir = util.promisify(fs.rm);
 const readdir = util.promisify(fs.readdir);
@@ -27,6 +27,25 @@ const getAbis = async (location: string) => {
     .filter(f => path.extname(f.name) === '.json')
     .map(f => path.basename(f.name, '.json'))
     .filter(f => kebabCase(f) === f);
+
+  return abis;
+};
+
+const normalizeAbis = async (location: string) => {
+  const abisDir = path.join(location, '/contracts/abis');
+  await mkdir(abisDir, { recursive: true });
+
+  const abis = (await readdir(abisDir, { withFileTypes: true }))
+    .filter(f => f.isFile())
+    .filter(f => path.extname(f.name) === '.json')
+    .map(f => `${path.basename(f.name, '.json')}.json`);
+
+  for (const abi of abis) {
+    const originalPath = path.join(abisDir, abi);
+    const nextFilename = strings.kebabCase(abi.replace('.json', ''));
+    const nextPath = path.join(abisDir, `${nextFilename}.json`);
+    fs.renameSync(originalPath, nextPath);
+  }
 
   return abis;
 };
@@ -52,7 +71,7 @@ const generateContract = async (location: string) => {
   });
 };
 
-const generateContractFactory = async (location: string) => {
+export const generateContractFactory = async (location: string) => {
   const abis = sortBy(await getAbis(location));
   const factoryName = upperFirst(camelCase(path.basename(location)));
   const isRoot = path.basename(location) === 'contract';
@@ -84,7 +103,7 @@ const generateContractFactory = async (location: string) => {
         return [`export type { ${typeName} } from './ethers'`];
       });
 
-      await writeFile(
+      await formatAndWrite(
         path.join(location, `/contracts/index.ts`),
         `
         import { Injectable, Inject } from '@nestjs/common';
@@ -130,7 +149,7 @@ constructor(${
   await renderer.ethers();
 };
 
-export default class NewCommand extends Command {
+export default class GenerateContractFactory extends Command {
   static description =
     'Generate typescript contract factories for a given app based on the ABIs contained within the contracts/abis folder.';
 
@@ -143,7 +162,7 @@ export default class NewCommand extends Command {
   static args = [{ name: 'appid', description: 'The application id (just the folder name)', required: false }];
 
   async run(): Promise<void> {
-    const { args, flags } = await this.parse(NewCommand);
+    const { args, flags } = await this.parse(GenerateContractFactory);
     const appId = args.appid;
 
     if (!flags.global && !appId) {
@@ -154,6 +173,9 @@ export default class NewCommand extends Command {
     const location = !flags.global ? appPath(appId) : path.resolve(__dirname, '../src/contract');
 
     try {
+      console.log(chalk.green(`Contracts abis have been normalized at ${location}`));
+      await normalizeAbis(location);
+
       await generateContract(location);
       console.log(chalk.green(`Contract generated at ${location}`));
 

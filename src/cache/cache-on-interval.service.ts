@@ -1,6 +1,8 @@
-import { CACHE_MANAGER, Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
-import { Cache } from 'cache-manager';
+import chalk from 'chalk';
+import Cache from 'file-system-cache';
+import { isUndefined } from 'lodash';
 
 import {
   CacheOnIntervalOptions,
@@ -13,9 +15,12 @@ export class CacheOnIntervalService implements OnModuleInit, OnModuleDestroy {
   private readonly intervals: NodeJS.Timer[] = [];
   private readonly registeredCacheKeys: string[] = [];
   private logger = new Logger(CacheOnIntervalService.name);
+  private cacheManager = Cache({
+    basePath: './.cache',
+    ns: '@CacheOnInterval',
+  });
 
   constructor(
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     @Inject(DiscoveryService) private readonly discoveryService: DiscoveryService,
     @Inject(MetadataScanner) private readonly metadataScanner: MetadataScanner,
     @Inject(Reflector) private readonly reflector: Reflector,
@@ -48,7 +53,7 @@ export class CacheOnIntervalService implements OnModuleInit, OnModuleDestroy {
     this.registeredCacheKeys.push(cacheKey);
   }
 
-  private registerCache(instance: any, methodName: string) {
+  registerCache(instance: any, methodName: string) {
     const logger = this.logger;
     const methodRef = instance[methodName];
     const cacheKey: CacheOnIntervalOptions['key'] = this.reflector.get(CACHE_ON_INTERVAL_KEY, methodRef);
@@ -71,13 +76,13 @@ export class CacheOnIntervalService implements OnModuleInit, OnModuleDestroy {
     instance[methodName] = async function () {
       const cachedValue = await cacheManager.get(cacheKey);
 
-      if (cachedValue) {
-        return cachedValue;
-      } else {
+      if (isUndefined(cachedValue)) {
         logger.warn(
           `@CacheOnInterval has no cache primed for ${instance.constructor.name}#${methodName}. Please wait for a few seconds as the cache is primed.`,
         );
       }
+
+      return cachedValue;
     };
 
     let liveData = methodRef.apply(instance);
@@ -85,25 +90,33 @@ export class CacheOnIntervalService implements OnModuleInit, OnModuleDestroy {
     if (!liveData.then) {
       liveData = new Promise(liveData);
     }
+
     liveData
-      .then(d => {
+      .then((d: any) => {
         return cacheManager.set(cacheKey, d);
       })
       .then(() => {
         logger.log(`Cache ready for for ${instance.constructor.name}#${methodName}`);
       })
-      .catch(e => {
-        logger.error(`@CacheOnInterval error init for ${instance.constructor.name}#${methodName}`, e);
+      .catch((e: Error) => {
+        logger.error(`@CacheOnInterval error init for ${instance.constructor.name}#${methodName}: ${e.message}`);
+        logger.error(chalk.gray(e.stack));
       });
 
     // Save the interval
-    const interval = setInterval(async () => {
-      try {
-        const liveData = await methodRef.apply(instance);
-        await cacheManager.set(cacheKey, liveData);
-      } catch (e) {
-        logger.error(`@CacheOnInterval error for ${instance.constructor.name}#${methodName}`, e);
-      }
+    const interval = setInterval(() => {
+      methodRef
+        .apply(instance)
+        .then((liveData: any) => {
+          cacheManager.set(cacheKey, liveData).catch((e: Error) => {
+            logger.error(`@CacheOnInterval caching error for ${instance.constructor.name}#${methodName}: ${e.message}`);
+            logger.error(chalk.gray(e.stack));
+          });
+        })
+        .catch((e: Error) => {
+          logger.error(`@CacheOnInterval target error for ${instance.constructor.name}#${methodName}: ${e.message}`);
+          logger.error(chalk.gray(e.stack));
+        });
     }, cacheTimeout);
     this.intervals.push(interval);
   }

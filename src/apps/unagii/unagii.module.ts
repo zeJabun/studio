@@ -1,13 +1,18 @@
-import { Module } from '@nestjs/common';
-
-import { AbstractDynamicApp } from '~app/app.dynamic-module';
+import { Register } from '~app-toolkit/decorators';
+import { AbstractApp } from '~app/app.dynamic-module';
 
 import { UnagiiContractFactory } from './contracts';
 import { EthereumUnagiiBalanceFetcher } from './ethereum/unagii.balance-fetcher';
-import { EthereumUnagiiPoolTokenFetcher } from './ethereum/unagii.pool.token-fetcher';
-import { UnagiiAppDefinition } from './unagii.definition';
+import { EthereumUnagiiVaultTokenFetcher } from './ethereum/unagii.vault.token-fetcher';
+import UNAGII_DEFINITION, { UnagiiAppDefinition } from './unagii.definition';
 
-@Module({
-  providers: [UnagiiAppDefinition, UnagiiContractFactory, EthereumUnagiiPoolTokenFetcher, EthereumUnagiiBalanceFetcher],
+@Register.AppModule({
+  appId: UNAGII_DEFINITION.id,
+  providers: [
+    UnagiiAppDefinition,
+    UnagiiContractFactory,
+    EthereumUnagiiVaultTokenFetcher,
+    EthereumUnagiiBalanceFetcher,
+  ],
 })
-export class UnagiiAppModule extends AbstractDynamicApp<UnagiiAppModule>() {}
+export class UnagiiAppModule extends AbstractApp() {}

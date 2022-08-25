@@ -1,13 +1,15 @@
 import { Inject } from '@nestjs/common';
 
+import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { Register } from '~app-toolkit/decorators';
 import { presentBalanceFetcherResponse } from '~app-toolkit/helpers/presentation/balance-fetcher-response.present';
 import { BalanceFetcher } from '~balance/balance-fetcher.interface';
-import { APP_TOOLKIT, IAppToolkit } from '~lib';
 import { Network } from '~types/network.interface';
 
 import { NaosStakingPools, NaosContractFactory } from '../contracts';
 import { NAOS_DEFINITION } from '../naos.definition';
+
+const network = Network.ETHEREUM_MAINNET;
 
 @Register.BalanceFetcher(NAOS_DEFINITION.id, Network.ETHEREUM_MAINNET)
 export class EthereumNaosBalanceFetcher implements BalanceFetcher {
@@ -18,7 +20,6 @@ export class EthereumNaosBalanceFetcher implements BalanceFetcher {
   ) {}
 
   async getStakedBalances(address: string) {
-    const network = Network.ETHEREUM_MAINNET;
     return this.appToolkit.helpers.masterChefContractPositionBalanceHelper.getBalances<NaosStakingPools>({
       address,
       appId: NAOS_DEFINITION.id,

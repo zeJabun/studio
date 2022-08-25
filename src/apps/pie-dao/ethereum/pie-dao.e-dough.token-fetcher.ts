@@ -1,9 +1,9 @@
 import { Inject } from '@nestjs/common';
 
+import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
 import { Register } from '~app-toolkit/decorators';
 import { buildDollarDisplayItem } from '~app-toolkit/helpers/presentation/display-item.present';
 import { getTokenImg } from '~app-toolkit/helpers/presentation/image.present';
-import { APP_TOOLKIT, IAppToolkit } from '~lib';
 import { ContractType } from '~position/contract.interface';
 import { PositionFetcher } from '~position/position-fetcher.interface';
 import { AppTokenPosition } from '~position/position.interface';
@@ -43,11 +43,13 @@ export class EthereumPieDaoEDoughTokenFetcher implements PositionFetcher<AppToke
     const supply = Number(supplyRaw) / 10 ** 18;
     const price = pricePerShare * underlyingToken.price;
     const tokens = [underlyingToken];
+    const liquidity = price * supply;
 
     // Display Props
     const label = symbol;
     const secondaryLabel = buildDollarDisplayItem(price);
     const images = [getTokenImg(underlyingToken.address, network)];
+    const statsItems = [{ label: 'liquidity', value: buildDollarDisplayItem(liquidity) }];
 
     const vaultToken: AppTokenPosition = {
       type: ContractType.APP_TOKEN,
@@ -62,12 +64,13 @@ export class EthereumPieDaoEDoughTokenFetcher implements PositionFetcher<AppToke
       pricePerShare,
       tokens,
 
-      dataProps: {},
+      dataProps: { liquidity },
 
       displayProps: {
         label,
         secondaryLabel,
         images,
+        statsItems,
       },
     };
 

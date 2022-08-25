@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { sumBy } from 'lodash';
+import { identity, sumBy } from 'lodash';
 
-import { APP_TOOLKIT, IAppToolkit } from '~lib';
-import { EthersMulticall as Multicall } from '~multicall';
+import { APP_TOOLKIT, IAppToolkit } from '~app-toolkit/app-toolkit.interface';
+import { IMulticallWrapper } from '~multicall/multicall.interface';
 import { DefaultDataProps, WithMetaType } from '~position/display.interface';
 import { ContractPositionBalance, TokenBalance } from '~position/position-balance.interface';
 import { ContractPosition } from '~position/position.interface';
@@ -13,10 +13,11 @@ type GetTokenBalancesParams<T> = {
   appId: string;
   groupId: string;
   address: string;
+  filter?: (contractPosition: ContractPosition<T>) => boolean;
   resolveBalances: (opts: {
     address: string;
     network: Network;
-    multicall: Multicall;
+    multicall: IMulticallWrapper;
     contractPosition: ContractPosition<T>;
   }) => Promise<WithMetaType<TokenBalance>[]>;
 };
@@ -30,6 +31,7 @@ export class ContractPositionBalanceHelper {
     appId,
     groupId,
     address,
+    filter = identity,
     resolveBalances,
   }: GetTokenBalancesParams<T>) {
     const multicall = this.appToolkit.getMulticall(network);
@@ -39,8 +41,9 @@ export class ContractPositionBalanceHelper {
       groupIds: [groupId],
     });
 
+    const filteredPositions = contractPositions.filter(filter);
     const balances = await Promise.all(
-      contractPositions.map(async contractPosition => {
+      filteredPositions.map(async contractPosition => {
         const tokens = await resolveBalances({ multicall, network, address, contractPosition });
         const balanceUSD = sumBy(tokens, t => t.balanceUSD);
         const balance: ContractPositionBalance<T> = { ...contractPosition, tokens, balanceUSD };
